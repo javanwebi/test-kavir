@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Completely block vite client auto-reload
+      const _originalError = console.error;
+      const _originalLog = console.log;
+      
+      // Silence Vite client logs
+      console.log = function(...args) {
+        if (typeof args[0] === 'string' && (args[0].includes('[vite]') || args[0].includes('server connection lost'))) {
+          return;
+        }
+        _originalLog.apply(console, args);
+      };
+      
+      console.error = function(...args) {
+        if (typeof args[0] === 'string' && args[0].includes('WebSocket server error')) {
+          return;
+        }
+        _originalError.apply(console, args);
+      };
+
+      // Block Vite's ping fetch to prevent reload from ever happening in older vite versions
+      const _originalFetch = window.fetch;
+      window.fetch = async function(...args) {
+        const options = args[1] || {};
+        const headers = options.headers || {};
+        const acceptHeader = headers['Accept'] || headers['accept'];
+        if (acceptHeader === 'text/x-vite-ping' || (typeof args[0] === 'string' && args[0].includes('__vite_ping'))) {
+          // Return a promise that never resolves to freeze the ping loop
+          return new Promise(() => {});
+        }
+        return _originalFetch.apply(this, args);
+      };
+
+      const OriginalWebSocket = window.WebSocket;
+      window.WebSocket = function(url, protocols) {
+        let isVite = false;
+        if (typeof protocols === 'string' && protocols.includes('vite')) isVite = true;
+        if (Array.isArray(protocols) && protocols.some(p => typeof p === 'string' && p.includes('vite'))) isVite = true;
+        
+        if (isVite) {
+            // Freeze vite WebSocket connections
+            const dummy = new EventTarget();
+            dummy.readyState = 0;
+            dummy.send = () => {};
+            dummy.close = () => {};
+            return dummy;
+        }
+        return new OriginalWebSocket(url, protocols);
+      };
+      window.WebSocket.prototype = OriginalWebSocket.prototype;
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>اینداستری‌پلاست</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                DEFAULT: '#25408f',
+                dark: '#1a2e6b',
+                light: '#3a5fbd',
+              },
+            },
+          },
+        },
+      }
+    </script>
+    <!-- Loading B Yekan font from a reliable CDN -->
+    <link href="https://cdn.font-store.ir/b-yekan.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <style>
+      /* Global Font override */
+      body, * {
+        font-family: 'B Yekan', 'Yekan', 'Tahoma', sans-serif !important;
+      }
+      /* Fallback for specific poppins usage if needed for English numbers, 
+         but prioritize B Yekan as requested for "entire" app */
+      .font-poppins {
+        font-family: 'B Yekan', sans-serif;
+      }
+      
+      /* Smooth scrolling for the whole app */
+      html {
+        scroll-behavior: smooth;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #25408f;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #1a2e6b;
+      }
+    </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
